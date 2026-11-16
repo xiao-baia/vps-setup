@@ -294,9 +294,9 @@ if command -v iptables &> /dev/null; then
 fi
 
 # ------------------------------------------------------------------------------
-# 7. Generate Mobile Clash Profile & Start Subscription Service
+# 7. Generate Mobile Clash Profile, Shadowrocket Conf & Start Subscription Service
 # ------------------------------------------------------------------------------
-log_info "Step 7: Setting up HTTP subscription service for Clash Meta (Port ${SUB_PORT})..."
+log_info "Step 7: Setting up HTTP subscription service for Clash Meta & Shadowrocket (Port ${SUB_PORT})..."
 
 mkdir -p /var/www/sub
 
@@ -326,32 +326,39 @@ dns:
     - "+.msftconnecttest.com"
     - "+.msftncsi.com"
     - "localhost.ptlogin2.qq.com"
-  respect-rules: false
+  respect-rules: true
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
   proxy-server-nameserver:
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
+    - 223.5.5.5
+    - 119.29.29.29
   direct-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
     - "https://dns.alidns.com/dns-query"
     - "https://doh.pub/dns-query"
   nameserver-policy:
+    "geosite:geolocation-!cn":
+      - "https://cloudflare-dns.com/dns-query#🚀 独享-AI与代码"
+      - "https://1.1.1.1/dns-query#🚀 独享-AI与代码"
+      - "https://dns.google/dns-query#🚀 独享-AI与代码"
     "geosite:cn,private":
+      - 223.5.5.5
+      - 119.29.29.29
+      - "https://dns.alidns.com/dns-query"
+      - "https://doh.pub/dns-query"
+    "rule-set:direct":
+      - 223.5.5.5
+      - 119.29.29.29
       - "https://dns.alidns.com/dns-query"
       - "https://doh.pub/dns-query"
   nameserver:
-    - "https://dns.alidns.com/dns-query"
-    - "https://doh.pub/dns-query"
-  fallback:
     - "https://cloudflare-dns.com/dns-query#🚀 独享-AI与代码"
     - "https://1.1.1.1/dns-query#🚀 独享-AI与代码"
-  fallback-filter:
-    geoip: true
-    geoip-code: CN
-    ipcidr:
-      - 240.0.0.0/4
-      - 0.0.0.0/32
+    - "https://dns.google/dns-query#🚀 独享-AI与代码"
 
 tun:
   enable: true
@@ -383,23 +390,35 @@ proxies:
     client-fingerprint: chrome
 
 proxy-groups:
+  # 严格禁止加入 DIRECT：节点失效即断网，绝不回落本地直连
   - name: "🚀 独享-AI与代码"
     type: select
     proxies:
       - "🇺🇸 独享-Claude-原生住宅9929"
-      - DIRECT
 
   - name: "🌐 谷歌与Gemini"
     type: select
     proxies:
       - "🇺🇸 独享-Claude-原生住宅9929"
-      - DIRECT
 
   - name: "🐟 漏网之鱼"
     type: select
     proxies:
       - "🇺🇸 独享-Claude-原生住宅9929"
-      - DIRECT
+
+rule-providers:
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
 
 rules:
   # ==========================================
@@ -412,29 +431,36 @@ rules:
   - DST-PORT,19302,🚀 独享-AI与代码
 
   # ==========================================
-  # 1. Claude / Anthropic 全生态专属规则（全走国外独享代理）
+  # 1. Claude / Anthropic 全生态、遥测与第三方统计域名（最高优先级锁死海外出口）
   # ==========================================
   - GEOSITE,anthropic,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,anthropic.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,claude.ai,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,claude.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,claudeusercontent.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,claudemcpclient.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,clau.de,🚀 独享-AI与代码
   - DOMAIN-KEYWORD,anthropic,🚀 独享-AI与代码
   - DOMAIN-KEYWORD,claude,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,statsig.anthropic.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,sentry.io,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,statsigapi.net,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,statsig.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,featuregates.org,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,intercom.io,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,intercomcdn.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,datadoghq.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,browser-intake-datadoghq.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,stripe.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,stripe.network,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,hcaptcha.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,challenges.cloudflare.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,googletagmanager.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,doubleclick.net,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,google-analytics.com,🚀 独享-AI与代码
 
   # ==========================================
-  # 2. 其他主流 AI 服务（OpenAI / Grok / Perplexity / Cursor）
+  # 2. 其他主流 AI 服务与开发者/防漏检测站（全走海外代理）
   # ==========================================
   - GEOSITE,openai,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,openai.com,🚀 独享-AI与代码
@@ -446,9 +472,24 @@ rules:
   - DOMAIN-SUFFIX,perplexity.ai,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,cursor.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,cursor.sh,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,github.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,githubusercontent.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,githubcopilot.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,v2ex.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,ippure.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,ipinfo.io,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,ipapi.co,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,ipify.org,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,httpbin.org,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,isp.ac,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,browserscan.net,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,browserleaks.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,browserleaks.net,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,surfsharkdns.com,🚀 独享-AI与代码
+  - DOMAIN-SUFFIX,fastly-analytics.com,🚀 独享-AI与代码
 
   # ==========================================
-  # 3. 谷歌与 Gemini 规则（VPS 内部直接走原生住宅 IP 直连）
+  # 3. 谷歌与 Gemini 规则（VPS 内部直接走原生住宅 IP 直连，若受限由服务端 WARP 无缝兜底）
   # ==========================================
   - DOMAIN-SUFFIX,gemini.google.com,🌐 谷歌与Gemini
   - DOMAIN-SUFFIX,aistudio.google.com,🌐 谷歌与Gemini
@@ -459,33 +500,128 @@ rules:
   - GEOIP,google,🌐 谷歌与Gemini,no-resolve
 
   # ==========================================
-  # 4. 国外常用服务与开发者生态（全走国外代理）
-  # ==========================================
-  - DOMAIN-SUFFIX,github.com,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,githubusercontent.com,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,githubcopilot.com,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,v2ex.com,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,ippure.com,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,ipinfo.io,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,ipapi.co,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,browserleaks.com,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,browserleaks.net,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,surfsharkdns.com,🚀 独享-AI与代码
-  - DOMAIN-SUFFIX,fastly-analytics.com,🚀 独享-AI与代码
-  - GEOSITE,geolocation-!cn,🚀 独享-AI与代码
-
-  # ==========================================
-  # 5. 国内网站与内网直连（no-resolve 杜绝本地 DNS 泄漏）
+  # 4. 局域网、保留地址（含 100.64.0.0/10）与 B 站 / 微信直连
   # ==========================================
   - GEOSITE,private,DIRECT
   - GEOIP,lan,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - DOMAIN-KEYWORD,mirrorakam,DIRECT
+  - DOMAIN-SUFFIX,bilibili.com,DIRECT
+  - DOMAIN-SUFFIX,bilivideo.com,DIRECT
+  - DOMAIN-SUFFIX,hdslb.com,DIRECT
+  - DOMAIN-SUFFIX,wechat.com,DIRECT
+  - DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+  - DOMAIN-SUFFIX,qpic.cn,DIRECT
+
+  # ==========================================
+  # 5. 海外域名总分类拦截（必须排在国内白名单之前）
+  # ==========================================
+  - GEOSITE,geolocation-!cn,🚀 独享-AI与代码
+
+  # ==========================================
+  # 6. 国内域名白名单与国内 IP 段直连（no-resolve 杜绝本地 DNS 泄漏）
+  # ==========================================
+  - RULE-SET,direct,DIRECT
   - GEOSITE,cn,DIRECT
+  - RULE-SET,cncidr,DIRECT,no-resolve
   - GEOIP,cn,DIRECT,no-resolve
 
   # ==========================================
-  # 6. 最终兜底（走国外代理）
+  # 7. 最终兜底（100% 走海外代理）
   # ==========================================
   - MATCH,🐟 漏网之鱼
+EOF
+
+cat > /var/www/sub/shadowrocket.conf << 'EOF'
+# ==============================================================================
+# Shadowrocket (iOS 小火箭) 终极防漏分流配置
+# 逻辑：国内白名单走国内，其余所有流量与第三方遥测 100% 走海外代理（FINAL,PROXY）
+# ==============================================================================
+
+[General]
+ipv6 = false
+bypass-system = true
+skip-proxy = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10, localhost, *.local
+tun-excluded-routes = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10
+dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query, 223.5.5.5, 119.29.29.29
+fallback-dns-server = https://cloudflare-dns.com/dns-query, https://1.1.1.1/dns-query
+hijack-dns = *:53
+always-real-ip = *.lan, *.local, *.arpa, time.*.com, ntp.*.com, +.msftconnecttest.com, +.msftncsi.com, localhost.ptlogin2.qq.com
+
+[Rule]
+IP-CIDR6,::/0,REJECT,no-resolve
+DOMAIN-KEYWORD,stun,PROXY
+DEST-PORT,3478,PROXY
+DEST-PORT,5349,PROXY
+DEST-PORT,19302,PROXY
+
+DOMAIN-SUFFIX,claude.ai,PROXY
+DOMAIN-SUFFIX,claude.com,PROXY
+DOMAIN-SUFFIX,anthropic.com,PROXY
+DOMAIN-SUFFIX,claudeusercontent.com,PROXY
+DOMAIN-SUFFIX,claudemcpclient.com,PROXY
+DOMAIN-SUFFIX,clau.de,PROXY
+DOMAIN-KEYWORD,anthropic,PROXY
+DOMAIN-KEYWORD,claude,PROXY
+DOMAIN-SUFFIX,statsig.anthropic.com,PROXY
+DOMAIN-SUFFIX,sentry.io,PROXY
+DOMAIN-SUFFIX,statsig.com,PROXY
+DOMAIN-SUFFIX,statsigapi.net,PROXY
+DOMAIN-SUFFIX,featuregates.org,PROXY
+DOMAIN-SUFFIX,intercom.io,PROXY
+DOMAIN-SUFFIX,intercomcdn.com,PROXY
+DOMAIN-SUFFIX,datadoghq.com,PROXY
+DOMAIN-SUFFIX,browser-intake-datadoghq.com,PROXY
+DOMAIN-SUFFIX,stripe.com,PROXY
+DOMAIN-SUFFIX,stripe.network,PROXY
+DOMAIN-SUFFIX,hcaptcha.com,PROXY
+DOMAIN-SUFFIX,challenges.cloudflare.com,PROXY
+DOMAIN-SUFFIX,googletagmanager.com,PROXY
+DOMAIN-SUFFIX,doubleclick.net,PROXY
+DOMAIN-SUFFIX,google-analytics.com,PROXY
+
+DOMAIN-SUFFIX,openai.com,PROXY
+DOMAIN-SUFFIX,chatgpt.com,PROXY
+DOMAIN-SUFFIX,oaistatic.com,PROXY
+DOMAIN-SUFFIX,oaiusercontent.com,PROXY
+DOMAIN-SUFFIX,gemini.google.com,PROXY
+DOMAIN-SUFFIX,aistudio.google.com,PROXY
+DOMAIN-SUFFIX,generativelanguage.googleapis.com,PROXY
+DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com,PROXY
+DOMAIN-SUFFIX,google.com,PROXY
+DOMAIN-SUFFIX,googleapis.com,PROXY
+DOMAIN-SUFFIX,gstatic.com,PROXY
+DOMAIN-SUFFIX,x.ai,PROXY
+DOMAIN-SUFFIX,grok.com,PROXY
+DOMAIN-SUFFIX,perplexity.ai,PROXY
+DOMAIN-SUFFIX,cursor.com,PROXY
+DOMAIN-SUFFIX,cursor.sh,PROXY
+DOMAIN-SUFFIX,ipinfo.io,PROXY
+DOMAIN-SUFFIX,api.ipify.org,PROXY
+DOMAIN-SUFFIX,httpbin.org,PROXY
+DOMAIN-SUFFIX,isp.ac,PROXY
+DOMAIN-SUFFIX,browserscan.net,PROXY
+
+DOMAIN-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/proxy.txt,PROXY
+
+IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+DOMAIN-KEYWORD,mirrorakam,DIRECT
+DOMAIN-SUFFIX,bilibili.com,DIRECT
+DOMAIN-SUFFIX,bilivideo.com,DIRECT
+DOMAIN-SUFFIX,hdslb.com,DIRECT
+DOMAIN-SUFFIX,wechat.com,DIRECT
+DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,qpic.cn,DIRECT
+
+DOMAIN-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/direct.txt,DIRECT
+RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/cncidr.txt,DIRECT,no-resolve
+GEOIP,CN,DIRECT,no-resolve
+
+FINAL,PROXY
 EOF
 
 cat > /etc/systemd/system/clash-sub.service << EOF
@@ -517,11 +653,15 @@ fi
 # ------------------------------------------------------------------------------
 VLESS_URL="vless://${UUID}@${SERVER_IP}:${PORT}?security=reality&encryption=none&pbk=${PUBLIC_KEY}&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=${SNI}&sid=${SHORT_ID}#%F0%9F%87%BA%F0%9F%87%B8%20%E7%8B%AC%E4%BA%AB-Claude-%E5%8E%9F%E7%94%9F%E4%BD%8F%E5%AE%859929"
 CLASH_SUB_URL="http://${SERVER_IP}:${SUB_PORT}/clash.yaml"
+SHADOWROCKET_CONF_URL="http://${SERVER_IP}:${SUB_PORT}/shadowrocket.conf"
 
 echo ""
 echo "==================== SETUP COMPLETE ===================="
 echo -e "${GREEN}[VLESS Share Link (iOS Shadowrocket / Sing-box / Loon)]${NC}:"
 echo "${VLESS_URL}"
+echo ""
+echo -e "${GREEN}[iOS Shadowrocket Anti-Leak Conf URL]${NC}:"
+echo "${SHADOWROCKET_CONF_URL}"
 echo ""
 echo -e "${GREEN}[Android / Desktop Clash Subscription URL (Clash Meta for Android / Clash Verge)]${NC}:"
 echo "${CLASH_SUB_URL}"
@@ -543,6 +683,7 @@ cat << JSON_OUTPUT
   "fingerprint": "chrome",
   "warp_port": ${WARP_PORT},
   "subscription_url": "${CLASH_SUB_URL}",
+  "shadowrocket_conf_url": "${SHADOWROCKET_CONF_URL}",
   "vless_url": "${VLESS_URL}"
 }
 ###JSON_OUTPUT_END###

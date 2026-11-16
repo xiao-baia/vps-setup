@@ -1,0 +1,101 @@
+# ==============================================================================
+# Shadowrocket (iOS 小火箭) 终极防漏分流配置
+# 逻辑：国内白名单走国内，其余所有流量与第三方遥测 100% 走海外代理（FINAL,PROXY）
+# 说明：
+#   1. 全配置除局域网、B站/微信及国内白名单外，禁止出现其他 DIRECT
+#   2. IPv6 全面关闭与 REJECT，防止 iOS 移动网络 IPv6 旁路泄漏
+#   3. IP 类规则全部携带 no-resolve，避免本地 DNS 解析泄漏
+#   4. 导入后在 Shadowrocket 首页保持「全局路由 = 配置」并选中你的独享节点
+# ==============================================================================
+
+[General]
+ipv6 = false
+bypass-system = true
+skip-proxy = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10, localhost, *.local
+tun-excluded-routes = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10
+dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query, 223.5.5.5, 119.29.29.29
+fallback-dns-server = https://cloudflare-dns.com/dns-query, https://1.1.1.1/dns-query
+hijack-dns = *:53
+always-real-ip = *.lan, *.local, *.arpa, time.*.com, ntp.*.com, +.msftconnecttest.com, +.msftncsi.com, localhost.ptlogin2.qq.com
+
+[Rule]
+# 0. 防泄漏加固：拦截 IPv6 旁路 & 代理全部 WebRTC STUN
+IP-CIDR6,::/0,REJECT,no-resolve
+DOMAIN-KEYWORD,stun,PROXY
+DEST-PORT,3478,PROXY
+DEST-PORT,5349,PROXY
+DEST-PORT,19302,PROXY
+
+# 1. Claude / Anthropic 全生态、遥测与第三方统计域名（最高优先级走代理）
+DOMAIN-SUFFIX,claude.ai,PROXY
+DOMAIN-SUFFIX,claude.com,PROXY
+DOMAIN-SUFFIX,anthropic.com,PROXY
+DOMAIN-SUFFIX,claudeusercontent.com,PROXY
+DOMAIN-SUFFIX,claudemcpclient.com,PROXY
+DOMAIN-SUFFIX,clau.de,PROXY
+DOMAIN-KEYWORD,anthropic,PROXY
+DOMAIN-KEYWORD,claude,PROXY
+DOMAIN-SUFFIX,statsig.anthropic.com,PROXY
+DOMAIN-SUFFIX,sentry.io,PROXY
+DOMAIN-SUFFIX,statsig.com,PROXY
+DOMAIN-SUFFIX,statsigapi.net,PROXY
+DOMAIN-SUFFIX,featuregates.org,PROXY
+DOMAIN-SUFFIX,intercom.io,PROXY
+DOMAIN-SUFFIX,intercomcdn.com,PROXY
+DOMAIN-SUFFIX,datadoghq.com,PROXY
+DOMAIN-SUFFIX,browser-intake-datadoghq.com,PROXY
+DOMAIN-SUFFIX,stripe.com,PROXY
+DOMAIN-SUFFIX,stripe.network,PROXY
+DOMAIN-SUFFIX,hcaptcha.com,PROXY
+DOMAIN-SUFFIX,challenges.cloudflare.com,PROXY
+DOMAIN-SUFFIX,googletagmanager.com,PROXY
+DOMAIN-SUFFIX,doubleclick.net,PROXY
+DOMAIN-SUFFIX,google-analytics.com,PROXY
+
+# 2. 其他主流 AI 服务及防漏检测域名
+DOMAIN-SUFFIX,openai.com,PROXY
+DOMAIN-SUFFIX,chatgpt.com,PROXY
+DOMAIN-SUFFIX,oaistatic.com,PROXY
+DOMAIN-SUFFIX,oaiusercontent.com,PROXY
+DOMAIN-SUFFIX,gemini.google.com,PROXY
+DOMAIN-SUFFIX,aistudio.google.com,PROXY
+DOMAIN-SUFFIX,generativelanguage.googleapis.com,PROXY
+DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com,PROXY
+DOMAIN-SUFFIX,google.com,PROXY
+DOMAIN-SUFFIX,googleapis.com,PROXY
+DOMAIN-SUFFIX,gstatic.com,PROXY
+DOMAIN-SUFFIX,x.ai,PROXY
+DOMAIN-SUFFIX,grok.com,PROXY
+DOMAIN-SUFFIX,perplexity.ai,PROXY
+DOMAIN-SUFFIX,cursor.com,PROXY
+DOMAIN-SUFFIX,cursor.sh,PROXY
+DOMAIN-SUFFIX,ipinfo.io,PROXY
+DOMAIN-SUFFIX,api.ipify.org,PROXY
+DOMAIN-SUFFIX,httpbin.org,PROXY
+DOMAIN-SUFFIX,isp.ac,PROXY
+DOMAIN-SUFFIX,browserscan.net,PROXY
+
+# 3. 海外域名名单（必须排在国内名单前面，拦截混在直连列表里的海外统计域名）
+DOMAIN-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/proxy.txt,PROXY
+
+# 4. 局域网、保留地址与国内高频直连（B 站 / 微信）
+IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+DOMAIN-KEYWORD,mirrorakam,DIRECT
+DOMAIN-SUFFIX,bilibili.com,DIRECT
+DOMAIN-SUFFIX,bilivideo.com,DIRECT
+DOMAIN-SUFFIX,hdslb.com,DIRECT
+DOMAIN-SUFFIX,wechat.com,DIRECT
+DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,qpic.cn,DIRECT
+
+# 5. 国内域名与国内 IP 白名单直连（Loyalsoldier/surge-rules）
+DOMAIN-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/direct.txt,DIRECT
+RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/cncidr.txt,DIRECT,no-resolve
+GEOIP,CN,DIRECT,no-resolve
+
+# 6. 最终兜底（其余一切流量强制走海外代理）
+FINAL,PROXY
