@@ -17,7 +17,8 @@ description: >-
 * **Gemini / Google "ZZ" 限制**：服务端内置 Cloudflare WARP 本地代理，按需智能分流或原生直连；
 * **长文本深度思考掉线**：优化内核 `tcp_keepalive_time` (30s) 与 Xray `connIdle` (1800s)，根除 `Broken pipe (os error 32)`；
 * **Mihomo / Clash Verge 握手失败**：锁定 **Xray v26.6.27** 并开启 `"minClientVer": ""`，规避后量子加密协商失败（`REALITY authentication failed`）；SNI 锁定 **`www.apple.com`**，杜绝证书链超长分片丢包；
-* **DNS 启动死锁与泄漏**：国内 DoH 作为 bootstrap，境外 DoH 走节点代理，全阻断 IPv6 与 WebRTC STUN 旁路。
+* **DNS 启动死锁与泄漏**：默认 `nameserver` 走经节点转发的 `1.1.1.1` / `8.8.8.8` 海外 DoH，仅通过 `nameserver-policy` 让 `geosite:cn,private` 走国内 DoH，全阻断 IPv6 与 WebRTC STUN 旁路，策略组移除 `DIRECT` 防误切。
+* **白名单自动更新**：通过 `rule-providers` 每日自动更新 `Loyalsoldier/clash-rules` 国内白名单（`direct.txt` + `cncidr.txt`）。
 
 ---
 
@@ -27,7 +28,7 @@ description: >-
 flowchart TD
     subgraph Client["本地设备 (PC / Mac / iOS / Android)"]
         CV["Clash Verge Rev / Mihomo (TUN: 198.18.0.1/30)"]
-        DNS["DNS 引擎 (Ali/Tencent DoH + 节点代理 Cloudflare DoH Fallback)"]
+        DNS["DNS 引擎 (海外 DoH 经代理转发 + cn/private 走国内 DoH)"]
         Rule["分流规则: 独享-AI与代码 / 谷歌与Gemini / 漏网之鱼"]
         CV --> DNS --> Rule
     end
@@ -111,4 +112,5 @@ python "skills/vps-setup/scripts/deploy_vps.py" `
    * 打开 App -> **配置** -> **新配置** -> **从 URL 导入**；
    * 填写：`http://<新VPS_IP>:24480/clash.yaml` 保存即可。
 3. **手机端（iOS - Shadowrocket / Sing-box / Loon）**：
-   * 复制生成的 `vless://...` 链接，打开 Shadowrocket 即可自动添加。
+   * 复制生成的 `vless://...` 链接，打开 Shadowrocket 添加节点并选中；
+   * 进入 **配置 (Config)** -> **从 URL 添加配置**，填写 `http://<新VPS_IP>:24480/shadowrocket.conf`（或导入本地生成的 `.conf` 文件）并启用，即可获得与桌面端一致的防泄漏规则。

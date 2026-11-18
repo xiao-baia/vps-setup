@@ -117,7 +117,9 @@ def run_remote_deployment(host, port, user, password=None, key_file=None, node_n
     print("\n=======================================================")
     print(" ALL DEPLOYMENT STEPS COMPLETED!")
     print(f" Local Clash Verge Profile : {os.path.abspath(output_yaml)}")
+    print(f" Local Shadowrocket Conf   : {os.path.splitext(os.path.abspath(output_yaml))[0]}.conf")
     print(f" iOS VLESS Share URL       : {meta.get('vless_url', '')}")
+    print(f" iOS Shadowrocket Conf URL : {meta.get('shadowrocket_conf_url', '')}")
     print(f" Android Clash Sub URL     : {meta.get('subscription_url', '')}")
     print("=======================================================\n")
 
