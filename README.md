@@ -4,7 +4,7 @@
 
 ---
 
-A specialized automation skill for configuring high-reliability Linux VPS endpoints and generating matching Clash Verge / Mihomo profiles for AI developer workflows (Claude, OpenAI, Gemini, Cursor).
+A specialized automation skill for configuring high-reliability Linux VPS endpoints and generating matching Clash Verge / Mihomo & Shadowrocket anti-leak profiles for AI developer workflows (Claude, OpenAI, Gemini, Cursor).
 
 ## Key Features
 
@@ -13,18 +13,17 @@ A specialized automation skill for configuring high-reliability Linux VPS endpoi
    * SNI configured to `www.apple.com` to prevent packet fragmentation caused by oversized TLS certificate chains.
 2. **Kernel-Level Tuning**:
    * Shortens `net.ipv4.tcp_keepalive_time` to 30s and configures Xray `connIdle` to 1800s to eliminate Broken Pipe disconnects during extended AI reasoning streams.
-   * Enables BBR congestion control and disables IPv6 system-wide to prevent location and DNS leaks.
-3. **Leak-Proof Clash Verge Profile Generation**:
-   * Generates a 1:1 structured profile matching production standards.
-   * Employs Fake-IP (`198.18.0.0/16`) and domestic DoH bootstrap with proxy-routed Cloudflare DoH fallback.
-   * Traps WebRTC STUN ports (`3478`, `5349`, `19302`) and drops all IPv6 traffic (`IP-CIDR6,::/0,REJECT`).
-4. **Dual-Track Outbound Routing**:
-   * Direct egress for native residential IP connections by default (no CAPTCHA, lowest latency).
-   * Built-in Cloudflare WARP proxy on port `40000` as a silent standby for fallback routing.
-5. **Multi-Platform Support**:
-   * Generates local YAML profiles for desktop.
-   * Hosts a lightweight HTTP subscription service on port `24480` for Android Clash Meta import.
-   * Outputs standard `vless://` share links for iOS (Shadowrocket, Sing-box, Loon).
+   * Enables BBR congestion control and disables IPv6 on the VPS.
+3. **Leak-Proof Clash Verge & Shadowrocket Profile Generation**:
+   * Generates 1:1 production-aligned `.yaml` and `.conf` profiles with no `DIRECT` fallback in overseas proxy groups.
+   * Uses Fake-IP (`198.18.0.0/16`) and proxy-routed overseas DoH (`1.1.1.1` / `8.8.8.8`) as the default nameserver, limiting domestic DoH strictly to CN/private policies.
+   * Places `IP-CIDR6,::/0,REJECT,no-resolve` at the top, puts LAN/reserved ranges (`private`, `lan`, `100.64.0.0/10`) and Bilibili CDN (`mirrorakam`) ahead of `STUN` ports and `GEOSITE,geolocation-!cn`, and auto-updates `Loyalsoldier/clash-rules` daily.
+4. **OS-Aware Anti-Leak Hardening**:
+   * **Windows**: Automatically detects and disables Windows SMHNR (`DisableSmartNameResolution = 1`) with a one-click desktop restore `.bat`; relies on modern Mihomo `strict-route: true` WFP enforcement to block IPv6 bypass.
+   * **macOS**: Never modifies macOS system network settings automatically; informs the user that SMHNR does not apply to macOS and advises checking `scutil --dns` and optionally adjusting Wi-Fi IPv6 mode at their own discretion.
+5. **Dual-Track Outbound Routing & Multi-Platform Support**:
+   * Direct native residential IP egress by default, with Cloudflare WARP on port `40000` as standby.
+   * Outputs desktop `.yaml`, iOS `.conf`, `vless://` links, and hosts an HTTP subscription server on port `24480`.
 
 ## Repository Structure
 
@@ -37,26 +36,15 @@ A specialized automation skill for configuring high-reliability Linux VPS endpoi
 ├── scripts/
 │   ├── deploy_vps.py                 # Automated remote deployment runner via SSH
 │   ├── vps_setup.sh                  # Remote VPS initialization script
-│   ├── generate_clash_config.py      # Local YAML profile generator
-│   └── verify_environment.py         # End-to-end verification gate check
+│   ├── generate_clash_config.py      # Local YAML & Shadowrocket .conf generator
+│   ├── windows_smhnr.py              # Windows SMHNR status/disable/restore utility
+│   └── verify_environment.py         # Real end-to-end DNS/IPv6 anti-leak gate check
 └── templates/
     ├── clash_profile.yaml.template   # Clash Verge configuration template
     └── xray_server.json.template     # Xray server configuration template
 ```
 
 ## Quick Start
-
-### Option 1: AI Agent Invocation (Recommended)
-
-In Antigravity, Cursor, or Claude Code, enter the following command in the chat:
-
-> "我新买了一台海外 VPS，IP 是 `x.x.x.x`，端口是 `xxxx`，密码是 `xxxx`，请用 vps-setup 技能帮我完成节点的配置。"
-
-The agent will read `SKILL.md`, connect to the new VPS, execute the initialization, and output the Clash Verge YAML profile.
-
-### Option 2: Local CLI Execution
-
-Run the deployment script directly from your terminal:
 
 ```bash
 python scripts/deploy_vps.py \
@@ -68,18 +56,12 @@ python scripts/deploy_vps.py \
   --output "US-Residential-Node.yaml"
 ```
 
-## Client Import Guide
-
-* **Windows / macOS (Clash Verge Rev)**: Open Profiles, drag and drop the generated `.yaml` file into the window, right-click to Use, and enable TUN Mode.
-* **Android (Clash Meta for Android)**: Go to Profiles -> New Profile -> Import from URL, and enter `http://<VPS_IP>:24480/clash.yaml`.
-* **iOS (Shadowrocket / Sing-box / Loon)**: Copy the generated `vless://` link and open the app to add automatically.
-
 ## Verification Gate Check
 
-Verify network cleanliness and anti-leak performance:
+With Clash Verge TUN mode enabled, run:
 
 ```bash
-python scripts/verify_environment.py --proxy http://127.0.0.1:7897
+python scripts/verify_environment.py
 ```
 
 ## License

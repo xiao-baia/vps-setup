@@ -415,13 +415,9 @@ rule-providers:
 
 rules:
   # ==========================================
-  # 0. 防泄漏加固：拦截 IPv6 旁路 & 代理全部 WebRTC STUN
+  # 0. 防泄漏加固：顶层拦截全部 IPv6 流量（配合 tun.strict-route: true 与 dns.ipv6: false）
   # ==========================================
   - IP-CIDR6,::/0,REJECT,no-resolve
-  - DOMAIN-KEYWORD,stun,🚀 独享-AI与代码
-  - DST-PORT,3478,🚀 独享-AI与代码
-  - DST-PORT,5349,🚀 独享-AI与代码
-  - DST-PORT,19302,🚀 独享-AI与代码
 
   # ==========================================
   # 1. Claude / Anthropic 全生态专属规则（全走国外独享代理）
@@ -445,6 +441,22 @@ rules:
   - DOMAIN-SUFFIX,stripe.network,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,hcaptcha.com,🚀 独享-AI与代码
   - DOMAIN-SUFFIX,challenges.cloudflare.com,🚀 独享-AI与代码
+
+  # ==========================================
+  # 1.5 内网保留地址与 B 站 CDN 直连（必须排在 STUN 端口与 geolocation-!cn 之前）
+  # ==========================================
+  - GEOSITE,private,DIRECT
+  - GEOIP,lan,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - DOMAIN-KEYWORD,mirrorakam,DIRECT
+
+  # ==========================================
+  # 1.8 WebRTC STUN 防泄漏（公网 STUN 全走海外代理）
+  # ==========================================
+  - DOMAIN-KEYWORD,stun,🚀 独享-AI与代码
+  - DST-PORT,3478,🚀 独享-AI与代码
+  - DST-PORT,5349,🚀 独享-AI与代码
+  - DST-PORT,19302,🚀 独享-AI与代码
 
   # ==========================================
   # 2. 其他主流 AI 服务（OpenAI / Grok / Perplexity / Cursor）
@@ -488,12 +500,8 @@ rules:
   - GEOSITE,geolocation-!cn,🚀 独享-AI与代码
 
   # ==========================================
-  # 5. 国内网站与内网直连（每日自动更新白名单，no-resolve 杜绝本地 DNS 泄漏）
+  # 5. 国内网站直连（每日自动更新白名单，no-resolve 杜绝本地 DNS 泄漏）
   # ==========================================
-  - GEOSITE,private,DIRECT
-  - GEOIP,lan,DIRECT,no-resolve
-  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
-  - DOMAIN-KEYWORD,mirrorakam,DIRECT
   - RULE-SET,direct,DIRECT
   - RULE-SET,cncidr,DIRECT,no-resolve
   - GEOSITE,cn,DIRECT
@@ -524,12 +532,8 @@ always-reject-url-rewrite = false
 private-ip-answer = true
 
 [Rule]
-# 0. 防泄漏加固：拦截 IPv6 旁路 & 代理 WebRTC STUN
+# 0. 防泄漏加固：顶层拦截 IPv6 旁路
 IP-CIDR6,::/0,REJECT,no-resolve
-DOMAIN-KEYWORD,stun,PROXY
-DEST-PORT,3478,PROXY
-DEST-PORT,5349,PROXY
-DEST-PORT,19302,PROXY
 
 # 1. Claude / Anthropic 全生态
 DOMAIN-SUFFIX,anthropic.com,PROXY
@@ -550,6 +554,20 @@ DOMAIN-SUFFIX,stripe.com,PROXY
 DOMAIN-SUFFIX,stripe.network,PROXY
 DOMAIN-SUFFIX,hcaptcha.com,PROXY
 DOMAIN-SUFFIX,challenges.cloudflare.com,PROXY
+
+# 1.5 内网保留地址与 B 站 CDN 直连（必须排在 STUN 端口与 proxy.txt 之前）
+IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+IP-CIDR,127.0.0.1/32,DIRECT,no-resolve
+DOMAIN-KEYWORD,mirrorakam,DIRECT
+
+# 1.8 WebRTC STUN 防泄漏
+DOMAIN-KEYWORD,stun,PROXY
+DEST-PORT,3478,PROXY
+DEST-PORT,5349,PROXY
+DEST-PORT,19302,PROXY
 
 # 2. 其他主流 AI 服务
 DOMAIN-SUFFIX,openai.com,PROXY
@@ -590,13 +608,7 @@ DOMAIN-SUFFIX,surfsharkdns.com,PROXY
 DOMAIN-SUFFIX,fastly-analytics.com,PROXY
 RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/proxy.txt,PROXY
 
-# 5. 国内网站与内网直连（自动更新白名单，no-resolve 防泄漏）
-IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
-IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
-IP-CIDR,127.0.0.1/32,DIRECT,no-resolve
-DOMAIN-KEYWORD,mirrorakam,DIRECT
+# 5. 国内网站直连（自动更新白名单，no-resolve 防泄漏）
 RULE-SET,https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/direct.txt,DIRECT
 GEOIP,CN,DIRECT,no-resolve
 

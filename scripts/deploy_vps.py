@@ -24,10 +24,11 @@ except ImportError:
     print("Error: paramiko is required. Install it via 'pip install paramiko'")
     sys.exit(1)
 
-def run_remote_deployment(host, port, user, password=None, key_file=None, node_name="🇺🇸 独享-Claude-原生住宅9929", output_yaml=None, google_route="direct"):
+def run_remote_deployment(host, port, user, password=None, key_file=None, node_name="🇺🇸 独享-Claude-原生住宅9929", output_yaml=None, google_route="direct", skip_smhnr=False):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     setup_sh_path = os.path.join(script_dir, "vps_setup.sh")
     gen_config_path = os.path.join(script_dir, "generate_clash_config.py")
+    smhnr_script_path = os.path.join(script_dir, "windows_smhnr.py")
 
     if not os.path.exists(setup_sh_path):
         print(f"Error: Setup script not found at {setup_sh_path}")
@@ -114,6 +115,21 @@ def run_remote_deployment(host, port, user, password=None, key_file=None, node_n
     )
     os.system(cmd)
 
+    # 6. Platform-specific DNS / IPv6 anti-leak post-step
+    if sys.platform == "win32" and not skip_smhnr and os.path.exists(smhnr_script_path):
+        print("\n[Windows DNS Hardening] Checking Windows SMHNR status...")
+        desktop_restore = os.path.join(os.path.expanduser("~"), "Desktop", "复原Windows-SMHNR.bat")
+        os.system(f'python "{smhnr_script_path}" --disable --restore-bat "{desktop_restore}"')
+    elif sys.platform == "darwin":
+        print("\n[macOS Anti-Leak Advisory (No System Settings Modified Automatically)]")
+        print("  1. macOS does NOT have Windows SMHNR — no SMHNR change is needed.")
+        print("  2. Note: macOS has no Windows WFP; when top-level ipv6 is false, native Wi-Fi public IPv6")
+        print("     may bypass utun. You may optionally set Wi-Fi IPv6 to 'Link-local only' in System Settings")
+        print("     (may affect IPv6-only intranet sites; left to your own choice and NOT changed automatically).")
+        print("  3. Run 'scutil --dns' after enabling TUN to verify resolver #1 points to 198.18.0.2")
+        print("     (and is not overridden by Tailscale MagicDNS 100.100.100.100 or iCloud Private Relay).")
+        print("  4. Keep 'DNS Override' and 'IPv6' turned OFF in Clash Verge Rev settings.")
+
     print("\n=======================================================")
     print(" ALL DEPLOYMENT STEPS COMPLETED!")
     print(f" Local Clash Verge Profile : {os.path.abspath(output_yaml)}")
@@ -133,6 +149,7 @@ def main():
     parser.add_argument("--node-name", default="🇺🇸 独享-Claude-原生住宅9929", help="Node display name in Clash Verge")
     parser.add_argument("--google-route", choices=["direct", "warp"], default="direct", help="Google & Gemini server outbound route (default: direct)")
     parser.add_argument("--output", help="Target output YAML filename")
+    parser.add_argument("--skip-smhnr", action="store_true", help="Skip automatically disabling Windows SMHNR on Windows")
 
     args = parser.parse_args()
 
@@ -148,7 +165,8 @@ def main():
         key_file=args.key_file,
         node_name=args.node_name,
         output_yaml=args.output,
-        google_route=args.google_route
+        google_route=args.google_route,
+        skip_smhnr=args.skip_smhnr
     )
 
 if __name__ == "__main__":
