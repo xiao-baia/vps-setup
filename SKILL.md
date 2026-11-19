@@ -77,7 +77,6 @@ flowchart TD
 ### 方式 1：直接在对话框交给 Agent（最推荐）
 在对话框发送新 VPS 的凭证，例如：
 > “我新买了一台海外 VPS，IP 是 `x.x.x.x`，端口是 `xxxx`，密码是 `xxxx`，请用 vps-setup 技能帮我完成节点的配置。”
-（或者：“请用 vps-setup 帮我配置成和现在一样的节点。”）
 
 Agent 执行本技能时，必须遵守以下平台行为规范：
 1. 远程初始化 VPS 并在本地生成 Clash `.yaml`、Shadowrocket `.conf` 与 `vless://` 链接；
